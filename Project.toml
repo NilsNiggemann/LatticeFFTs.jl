@@ -1,0 +1,4 @@
+name = "LatticeFFTs"
+uuid = "83e9f648-131d-4a3c-a1de-d155351cd207"
+authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
+version = "0.1.0"
