@@ -1,0 +1,6 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+EasyFFTs = "08be435b-48e7-4090-a646-9e3615ae1968"
+LatticeFFTs = "83e9f648-131d-4a3c-a1de-d155351cd207"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
