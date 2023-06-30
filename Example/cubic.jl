@@ -79,7 +79,7 @@ end
 hhlslice(M) = M[[CartesianIndex(i,i,j) for i in axes(M,1), j in axes(M,3)]]
 ##
 let 
-    N = 101
+    N = 101 # even and odd makes a difference of -1 phase!
     chiR = OffsetArrays.centered(zeros(N,N,N))
     # chiR = zeros(N,N)
     order = 0.9SA[1,1,1]*pi
