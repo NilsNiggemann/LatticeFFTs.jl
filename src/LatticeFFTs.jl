@@ -1,5 +1,4 @@
 module LatticeFFTs
-using FFTW
-greet() = print("Hello World!")
+    using FFTW, Interpolations
 
 end # module LatticeFFTs
