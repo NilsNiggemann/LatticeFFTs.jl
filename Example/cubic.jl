@@ -47,13 +47,13 @@ let
     k2 = LinRange(-pi,pi,100)
     chiKCont = [naiveFT(k,chi) for k in k2]
     chi = OffsetArrays.no_offset_view(chi)
-    lines(collect(eachindex(chi)),chi) |> display
+    lines(chi) |> display
     # chiKfft = real(dressFT!(fft(chi)))
     # chiKfft = real(fft(ifftshift(chi)))
-    chiKfft = real(fft(ifftshift(chi)))
+    chiKfft = real(fftshift(fft(ifftshift(chi))))
     chiK = real(naiveDFT(chi))
     # chiK = naiveDFT(chi)
-    k = fftfreq(N)*2
+    k = fftshift(fftfreq(N)*2)
     # push!(chiK,chiK[1])
     # k = 2piN*eachindex(chiK))
     scatter(k,chiKfft)
