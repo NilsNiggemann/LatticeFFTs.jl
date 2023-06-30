@@ -28,35 +28,36 @@ function naiveFT(k,chiR)
 end
 function dressFT!(chiK)    
     for k in CartesianIndices(chiK)
-        # chiK[k] *= exp(1im*pi*sum(Tuple(k)))
+        # chiK[k] *= exp(1im*pi*(sum(Tuple(k))))
         isodd(sum(Tuple(k))) && (chiK[k] *=-1)
     end
     return chiK
 end
 ##
 let 
-    f1= 0.5*1pi
+    f1= 0.8*1pi
     N = 401
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
     for i in eachindex(chi)
-        chi[i] = (-1)^(i)*exp(-(i)^2/20)
-        # chi[i] = cos(f1*i)*exp(-(i)^2/40)
+        # chi[i] = (-1)^(i)*exp(-(i)^2/20)
+        chi[i] = cos(f1*i)*exp(-(i)^2/40)
         # chi[i] = 1
     end
     k2 = LinRange(-pi,pi,100)
     chiKCont = [naiveFT(k,chi) for k in k2]
-    chi = OffsetArrays.no_offset_view(chi)[1:end-1]
-    N-=1
+    chi = OffsetArrays.no_offset_view(chi)
     lines(collect(eachindex(chi)),chi) |> display
-    chiKfft = real(dressFT!(fft(chi)))
+    # chiKfft = real(dressFT!(fft(chi)))
+    # chiKfft = real(fft(ifftshift(chi)))
+    chiKfft = real(fft(ifftshift(chi)))
     chiK = real(naiveDFT(chi))
     # chiK = naiveDFT(chi)
     k = fftfreq(N)*2
     # push!(chiK,chiK[1])
     # k = 2piN*eachindex(chiK))
-    scatter(k,chiK)
-    # scatter!(k,chiKfft)
+    scatter(k,chiKfft)
+    # scatter!(k,chiK)
     lines!(k2./pi,chiKCont)
     hlines!([8])
     # lines(k,OffsetArrays.no_offset_view(chiK))
@@ -74,12 +75,14 @@ function Cubicspiral(n,k,xi=10000)
 end
 
 ##
-
+""" given a matrix NxNxN return a 2D slice with the indices (i,i,j)"""
+hhlslice(M) = M[[CartesianIndex(i,i,j) for i in axes(M,1), j in axes(M,3)]]
+##
 let 
     N = 101
-    chiR = OffsetArrays.centered(zeros(N,N))
+    chiR = OffsetArrays.centered(zeros(N,N,N))
     # chiR = zeros(N,N)
-    order = 0.2SA[1,1]*pi
+    order = 0.9SA[1,1,1]*pi
     for ij in CartesianIndices(chiR)
         k = SVector(Tuple(ij))
         # cij = CubicAFMCorr(k)
@@ -89,15 +92,17 @@ let
     chiR = OffsetArrays.no_offset_view(chiR)
 
     # chiR = OffsetArrays.no_offset_view(chiR)
-    heatmap(collect(axes(chiR,1)),collect(axes(chiR,2)),chiR[:,:,1],axis = (;aspect=1)) |> display
-    chiK = fftshift(dressFT!(fft(chiR)))
+    # heatmap(collect(axes(chiR,1)),collect(axes(chiR,2)),chiR[:,:,1],axis = (;aspect=1)) |> display
+    # chiK = fftshift(dressFT!(fft(chiR)))
+    chiK = real(fftshift(fft(ifftshift(chiR))))
     # chiK = naiveDFT(chiR)
     # @info "chiK" maximum(imag(chiK))
     chiK = real(chiK)
     k = fftshift(fftfreq(N))*2
     fig = Figure()
     ax = Axis(fig[1,1],aspect = 1)
-    hm = heatmap!(ax,k,k,chiK[:,:,1])
+    # hm = heatmap!(ax,k,k,chiK[:,:,N÷2+1])
+    hm = heatmap!(ax,k,k,hhlslice(chiK))
     # hm = heatmap!(ax,k,k,fftshift(chiK))
     scatter!(ax,Point2(order[1:2]...)/pi,markersize = 20,marker =  '×',color =:red)
     Colorbar(fig[1,2],hm)
