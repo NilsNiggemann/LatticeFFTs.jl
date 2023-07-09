@@ -1,6 +1,7 @@
 using StaticArrays, CairoMakie
 using OffsetArrays
 using LatticeFFTs.FFTW
+import FRGLatticeEvaluation as FLE
 ##
 function naiveDFT(chiR)
     N = size(chiR,1)
@@ -38,7 +39,7 @@ let
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
     func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
-    func(i) = func2(i-1)
+    func(i) = func2(i)
     chi = func.(eachindex(chi))
 
     
@@ -62,7 +63,7 @@ let
     # lines(k,OffsetArrays.no_offset_view(chiK))
     vlines!([f1/pi],color = :red)
     # xlims!(0,2*f2)
-    chikextr = FLE.getInterpolatedFFT(chi)
+    chikextr = FLE.getInterpolatedFFT(chi,101)
     k = LinRange(-2pi,2pi,500)
     lines!(k./pi,real.(chikextr.(k)),color = :red)
     current_figure()
@@ -84,7 +85,7 @@ let
     N = 101 # even and odd makes a difference of -1 phase!
     chiR = OffsetArrays.centered(zeros(N,N,N))
     # chiR = zeros(N,N)
-    order = 0.9SA[1,1,1]*pi
+    order = 0SA[1,1,0]*pi
     for ij in CartesianIndices(chiR)
         k = SVector(Tuple(ij))
         # cij = CubicAFMCorr(k)
@@ -96,17 +97,25 @@ let
     # chiR = OffsetArrays.no_offset_view(chiR)
     # heatmap(collect(axes(chiR,1)),collect(axes(chiR,2)),chiR[:,:,1],axis = (;aspect=1)) |> display
     # chiK = fftshift(dressFT!(fft(chiR)))
-    chiK = real(fftshift(fft(ifftshift(chiR))))
+    # chiK = real(fftshift(fft(ifftshift(chiR))))
     # chiK = naiveDFT(chiR)
     # @info "chiK" maximum(imag(chiK))
-    chiK = real(chiK)
-    k = fftshift(fftfreq(N))*2
+    # chiK = real(chiK)
+
+    # k = fftshift(fftfreq(N))*2
+    @time chik = FLE.getInterpolatedFFT(chiR,256)
+    k = LinRange(-4pi,4pi,2000)
+    return chik
+    @time chi = [chik(kx,ky,0) for kx in k, ky in k]
     fig = Figure()
     ax = Axis(fig[1,1],aspect = 1)
     # hm = heatmap!(ax,k,k,chiK[:,:,N÷2+1])
-    hm = heatmap!(ax,k,k,hhlslice(chiK))
+    # hm = heatmap!(ax,k,k,hhlslice(chiK))
+    hm = heatmap!(ax,k,k,chi)
     # hm = heatmap!(ax,k,k,fftshift(chiK))
-    scatter!(ax,Point2(order[1:2]...)/pi,markersize = 20,marker =  '×',color =:red)
+    ps = [Point(-pi,-pi),Point(pi,-pi),Point(pi,pi),Point(-pi,pi),Point(-pi,-pi)]
+    lines!(ps)
+    scatter!(ax,[Point2(order[1:2]...), Point2(4pi .+order[1:2]...)],markersize = 20,marker =  '×',color =:red)
     Colorbar(fig[1,2],hm)
     fig
 end
