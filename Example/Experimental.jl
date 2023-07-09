@@ -16,13 +16,10 @@ function naiveDFT(chiR)
     end
     return chiK
 end
-function naiveFT(k,chiR)
+function naiveFT(k,chiR,func)
     chik = 0.
-    N = length(chiR)-1
     for n in eachindex(chiR)
-        chik +=(-1)^n*exp(-n^2/20)*cos(k*n)
-        # @info "test" n chiR[abs(n)+1] (-1)^n*exp(-n^2/20)
-        # chik += chiR[n]*cos(k*n)
+        chik +=func(n)*cos(k*n)
     end
     return chik
 end
@@ -36,33 +33,38 @@ end
 ##
 let 
     f1= 0.8*1pi
-    N = 401
+    N = 41
+    Nreal = 9
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
-    for i in eachindex(chi)
-        # chi[i] = (-1)^(i)*exp(-(i)^2/20)
-        chi[i] = cos(f1*i)*exp(-(i)^2/40)
-        # chi[i] = 1
-    end
-    k2 = LinRange(-pi,pi,100)
-    chiKCont = [naiveFT(k,chi) for k in k2]
+    func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
+    func(i) = func2(i-1)
+    chi = func.(eachindex(chi))
+
+    
+    k2 = LinRange(-2pi,2pi,1000)
+    chiKCont = [naiveFT(k,chi,func2) for k in k2]
     chi = OffsetArrays.no_offset_view(chi)
     lines(chi) |> display
     # chiKfft = real(dressFT!(fft(chi)))
-    # chiKfft = real(fft(ifftshift(chi)))
-    chiKfft = real(fftshift(fft(ifftshift(chi))))
+    # chiKfft = real(fft(fftshift(chi)))
+    chiKfft = real(rfft(ifftshift(chi)))
     chiK = real(naiveDFT(chi))
     # chiK = naiveDFT(chi)
-    k = fftshift(fftfreq(N)*2)
+    k = rfftfreq(N)*2
     # push!(chiK,chiK[1])
     # k = 2piN*eachindex(chiK))
+    # scatter(k,chiKfft)
     scatter(k,chiKfft)
     # scatter!(k,chiK)
-    lines!(k2./pi,chiKCont)
-    hlines!([8])
+    lines!(k2./pi,chiKCont,color = :black, linewidth = 5)
+    # hlines!([8])
     # lines(k,OffsetArrays.no_offset_view(chiK))
     vlines!([f1/pi],color = :red)
     # xlims!(0,2*f2)
+    chikextr = FLE.getInterpolatedFFT(chi)
+    k = LinRange(-2pi,2pi,500)
+    lines!(k./pi,real.(chikextr.(k)),color = :red)
     current_figure()
 end
 ##
@@ -107,4 +109,16 @@ let
     scatter!(ax,Point2(order[1:2]...)/pi,markersize = 20,marker =  '×',color =:red)
     Colorbar(fig[1,2],hm)
     fig
+end
+##
+let 
+    k1 = LinRange(-pi,pi,50)
+    y = sin.(k1)
+
+    scatter(k1,y)
+    yint = interpolate((k1,),y,Gridded(Linear()))
+    yext = extrapolate(yint,Periodic())
+    k2 = LinRange(-2pi,2pi,100)
+    lines!(k2,yext.(k2))
+    current_figure()
 end
