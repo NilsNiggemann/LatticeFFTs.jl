@@ -1,7 +1,7 @@
 using StaticArrays, CairoMakie
 using OffsetArrays
-using LatticeFFTs.FFTW
 import FRGLatticeEvaluation as FLE
+using FRGLatticeEvaluation.FFTViews
 ##
 function naiveDFT(chiR)
     N = size(chiR,1)
@@ -34,8 +34,8 @@ end
 ##
 let 
     f1= 0.8*1pi
-    N = 41
-    Nreal = 9
+    N = 211
+    Nreal = 10
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
     func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
@@ -47,12 +47,14 @@ let
     chiKCont = [naiveFT(k,chi,func2) for k in k2]
     chi = OffsetArrays.no_offset_view(chi)
     lines(chi) |> display
-    # chiKfft = real(dressFT!(fft(chi)))
+    # chiKfft = rel(dressFT!(fft(chi)))
     # chiKfft = real(fft(fftshift(chi)))
-    chiKfft = real(rfft(ifftshift(chi)))
+    chiKfft = real(fft(ifftshift(chi)))
+    # chiKfftView = FFTView(fft(ifftshift(chi)))
+
     chiK = real(naiveDFT(chi))
     # chiK = naiveDFT(chi)
-    k = rfftfreq(N)*2
+    k = FFTViews.fftfreq(N)*2
     # push!(chiK,chiK[1])
     # k = 2piN*eachindex(chiK))
     # scatter(k,chiKfft)
@@ -61,11 +63,14 @@ let
     lines!(k2./pi,chiKCont,color = :black, linewidth = 5)
     # hlines!([8])
     # lines(k,OffsetArrays.no_offset_view(chiK))
-    vlines!([f1/pi],color = :red)
     # xlims!(0,2*f2)
-    chikextr = FLE.getInterpolatedFFT(chi,101)
-    k = LinRange(-2pi,2pi,500)
+    chikextr = FLE.getInterpolatedFFT(chi,512)
+    k = LinRange(-2pi,6pi,500)
     lines!(k./pi,real.(chikextr.(k)),color = :red)
+    kBZ = -N:N
+    vlines!(f1/pi .* -1:2:6,color = :grey,linestyle = :dash)
+    # lines!(2 .*kBZ ./N,real(chiKfftView[kBZ]),color = :red)
+    
     current_figure()
 end
 ##
@@ -81,15 +86,23 @@ end
 """ given a matrix NxNxN return a 2D slice with the indices (i,i,j)"""
 hhlslice(M) = M[[CartesianIndex(i,i,j) for i in axes(M,1), j in axes(M,3)]]
 ##
-let 
-    N = 101 # even and odd makes a difference of -1 phase!
-    chiR = OffsetArrays.centered(zeros(N,N,N))
+function applyFunc(k,chik)
+    chi = zeros(length(k),length(k))
+    @time for (i,kx) in enumerate(k), (j,ky) in enumerate(k)
+        chi[i,j] = chik(kx,ky,0.)
+    end
+end
+##
+function testCubic()
+    N = 60 +1 # even and odd makes a difference of -1 phase!
+    chiR = OffsetArrays.centered(zeros(N,N,3N))
     # chiR = zeros(N,N)
-    order = 0SA[1,1,0]*pi
-    for ij in CartesianIndices(chiR)
+    order = 0.4SA[1,1,0]*pi
+     
+    @time for ij in CartesianIndices(chiR)
         k = SVector(Tuple(ij))
         # cij = CubicAFMCorr(k)
-        cij = Cubicspiral(k,order,N)
+        cij = Cubicspiral(k,order,2N)
         chiR[ij] = cij
     end
     chiR = OffsetArrays.no_offset_view(chiR)
@@ -103,10 +116,12 @@ let
     # chiK = real(chiK)
 
     # k = fftshift(fftfreq(N))*2
-    @time chik = FLE.getInterpolatedFFT(chiR,256)
-    k = LinRange(-4pi,4pi,2000)
-    return chik
-    @time chi = [chik(kx,ky,0) for kx in k, ky in k]
+    @time chik = FLE.getInterpolatedFFT(chiR,128)
+    # return chik
+    k = LinRange(0,8pi,500)
+    # @time chi = [chik(kx,ky,0.) for kx in k, ky in k]
+    @time chi = applyFunc(k,chik)
+    return
     fig = Figure()
     ax = Axis(fig[1,1],aspect = 1)
     # hm = heatmap!(ax,k,k,chiK[:,:,N÷2+1])
@@ -114,11 +129,14 @@ let
     hm = heatmap!(ax,k,k,chi)
     # hm = heatmap!(ax,k,k,fftshift(chiK))
     ps = [Point(-pi,-pi),Point(pi,-pi),Point(pi,pi),Point(-pi,pi),Point(-pi,-pi)]
-    lines!(ps)
-    scatter!(ax,[Point2(order[1:2]...), Point2(4pi .+order[1:2]...)],markersize = 20,marker =  '×',color =:red)
+    lines!([Point2(2pi,2pi) + p for p in ps])
+    scatter!(ax,[Point2(order[1:2]...), Point2(6pi .+order[1:2]...)],markersize = 20,marker =  '×',color =:red)
     Colorbar(fig[1,2],hm)
     fig
 end
+##
+testCubic()
+@profview testCubic()
 ##
 let 
     k1 = LinRange(-pi,pi,50)
