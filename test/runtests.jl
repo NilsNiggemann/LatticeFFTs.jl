@@ -10,20 +10,21 @@ end
 
 @testset "interpolated FFT" begin
     f1= 0.8*1pi
-    N = 3003
-    Nreal = 3003
-    chi = OffsetArrays.centered(zeros(N))
+    for shift in (0,1)
+        N = 3002+1
+        chi = OffsetArrays.centered(zeros(N))
 
-    func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
-    func(i) = func2(i)
+        func2(i) = cos(f1*i)*exp(-(i)^2/40)
+        func(i) = func2(i - iseven(N)) #shift center for even N
 
-    chi = func.(eachindex(chi))
-    
-    chiArray = OffsetArrays.no_offset_view(chi)
+        chi = func.(eachindex(chi))
+        
+        chiArray = OffsetArrays.no_offset_view(chi)
 
-    chikextr = LatticeFFTs.getInterpolatedFFT(chiArray,512)
+        chikextr = LatticeFFTs.getInterpolatedFFT(chiArray,512)
 
-    for k in (f1,pi,0,0.13)
-        @test real(naiveFT(k,chi,func2)) ≈ real(chikextr(k)) atol = 1e-4
+        for k in (f1,pi,0,0.13)
+            @test real(naiveFT(k,chi,func2)) ≈ real(chikextr(k)) atol = 1e-4
+        end
     end
 end
