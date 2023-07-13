@@ -36,11 +36,11 @@ end
 ##
 @testset "Cubic" begin
     N = 40 +1
-    chiR = OffsetArrays.centered(zeros(N,N,N))
+    chiR = OffsetArrays.centered(zeros(N,N,3N))
     # chiR = zeros(N,N)
-    order = 0.8SA[1,1,0]*pi
-    Config(n) = Cubicspiral(SA[Tuple(n)...],order,1)
-    Config(n1,n2,n3) = Cubicspiral(SA[n1,n2,n3],order,1)
+    order = 0.5SA[1,1,0]*pi
+    Config(n) = Cubicspiral(SA[Tuple(n)...],order,30)
+    Config(n1,n2,n3) = Cubicspiral(SA[n1,n2,n3],order,30)
      
     for ij in CartesianIndices(chiR)
         k = SVector(Tuple(ij))
@@ -55,8 +55,8 @@ end
     chikNaive(k) = real(naiveFT(k,chiR,Config))
     chikFFT(k) = real(chik(k...))
 
-    @test chikNaive(order) ≈ chikFFT(order) atol = 1e-3
+    @test chikNaive(order) ≈ chikFFT(order) atol = 1e-4
     @test chikNaive(SA[pi,pi,pi]) ≈ chikFFT(SA[pi,pi,pi]) atol = 1e-4
     @test chikNaive(SA[0,0,0]) ≈ chikFFT(SA[0,0,0]) atol = 1e-4
-    @test chikNaive(SA[0.13,0.5,√2]) ≈ chikFFT(SA[0.13,0.5,√2]) atol = 1e-3
+    @test chikNaive(SA[0.13,0.5,√2]) ≈ chikFFT(SA[0.13,0.5,√2]) atol = 1e-4
 end
