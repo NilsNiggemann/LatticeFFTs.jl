@@ -1,7 +1,6 @@
 using StaticArrays, CairoMakie
 using OffsetArrays
 import FRGLatticeEvaluation as FLE
-using FRGLatticeEvaluation.FFTViews
 ##
 function naiveDFT(chiR)
     N = size(chiR,1)
@@ -35,7 +34,7 @@ end
 let 
     f1= 0.8*1pi
     N = 211
-    Nreal = 10
+    Nreal = 100
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
     func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
