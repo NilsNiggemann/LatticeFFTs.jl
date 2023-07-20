@@ -1,7 +1,9 @@
 module LatticeFFTs
 
-    using FFTViews, Interpolations
+    using FFTViews, Interpolations,StaticArrays
     using FFTW
+    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT
+
     abstract type AbstractPadding end
     struct AutomaticPadding <: AbstractPadding end
     
@@ -82,7 +84,7 @@ module LatticeFFTs
     end
     
     function (F::AbstractPhaseShiftedFFT)(k::AbstractVector)
-        exp(1im*k'*F.PhaseVector)* S((F.T'*k)...)
+        exp(1im*k'*F.PhaseVector)* F.S((F.T'*k)...)
     end
 
     function (F::AbstractPhaseShiftedFFT)(args...)
@@ -97,23 +99,28 @@ module LatticeFFTs
     end
 
     LatticeFFT = LatticeFFT_1
-    Base.getindex(S::LatticeFFT,i,j) = getindex(S.Mat,i,j)
-    Base.setindex!(S::LatticeFFT,x,i,j) = setindex!(S.Mat,x,i,j)
-    Base.iterate(S::LatticeFFT,i) = iterate(S.Mat,i)
-    Base.iterate(S::LatticeFFT) = iterate(S.Mat)
+    Base.getindex(S::LatticeFFT,i,j) = getindex(S.S,i,j)
+    Base.setindex!(S::LatticeFFT,x,i,j) = setindex!(S.S,x,i,j)
+    Base.iterate(S::LatticeFFT,i) = iterate(S.S,i)
+    Base.iterate(S::LatticeFFT) = iterate(S.S)
 
-    Base.size(S::LatticeFFT) = size(S.Mat)
-    Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.Mat),S.S)
+    Base.size(S::LatticeFFT) = size(S.S)
+    Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.S),S.S)
 
-    function (A::LatticeFFT)(k::AbstractVector)
-        return sum(a(k) for a in A)
+    function (A::LatticeFFT_1)(k::AbstractVector)
+        dim = size(A.S)
+        return sum(a(k) for a in A)/dim[1]
+    end
+    function (A::LatticeFFT_1)(args...)
+        k = SA[args...]
+        return A(k)
     end
 
-    function interpolatedFT(S_ab,BasisVectors::AbstractMatrix,UnitCellVectors::AbstractArray{<:AbstractArray})
+    function interpolatedFT(S_ab,BasisVectors::AbstractMatrix,UnitCellVectors::AbstractArray{<:AbstractArray},padding = AutomaticPadding())
         NCell,NCell2 = size(S_ab)
         @assert NCell == NCell2 "S_ab needs to be a square matrix"
-        Sk_ab = [PhaseShiftedFFT_1(getInterpolatedFFT(Chi_ab[α,β]),BasisVectors,UnitCellVectors[α] .- UnitCellVectors[β]) for α in 1:NCell,β in 1:NCell]
-        return Sk_ab
+        Sk_ab = [PhaseShiftedFFT_1(getInterpolatedFFT(S_ab[α,β],padding),BasisVectors,UnitCellVectors[α] .- UnitCellVectors[β]) for α in 1:NCell,β in 1:NCell]
+        return LatticeFFT(Sk_ab)
     end
 
 end # module LatticeFFTs

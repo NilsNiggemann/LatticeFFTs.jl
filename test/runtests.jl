@@ -1,4 +1,5 @@
 using Test,OffsetArrays, StaticArrays
+using LatticeFFTs
 ##
 function naiveFT(k::AbstractVector,chiR,func)
     chik = 0. +0im

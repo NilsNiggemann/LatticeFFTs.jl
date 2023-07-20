@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.0"
+julia_version = "1.9.1"
 manifest_format = "2.0"
 project_hash = "b2e2adbf93b8becb1e4c38c8502dc2ed42240bbd"
 
@@ -387,8 +387,8 @@ uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
 
 [[deps.FRGLatticeEvaluation]]
-deps = ["FFTViews", "Interpolations", "LaTeXStrings", "LinearAlgebra", "LoopVectorization", "Optim", "SLEEFPirates", "SpinFRGLattices", "StaticArrays", "Test"]
-path = "../../FRGLatticeEvaluation.jl"
+deps = ["Interpolations", "LaTeXStrings", "LatticeFFTs", "LinearAlgebra", "LoopVectorization", "Optim", "SLEEFPirates", "SpinFRGLattices", "StaticArrays", "Test"]
+path = "../../../FRGLatticeEvaluation.jl"
 uuid = "a44b592b-45f7-4b02-a4df-e53b23f0d903"
 version = "0.1.7"
 
@@ -716,7 +716,7 @@ uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.3.0"
 
 [[deps.LatticeFFTs]]
-deps = ["FFTW", "FRGLatticeEvaluation", "Interpolations", "SpinFRGLattices"]
+deps = ["FFTViews", "FFTW", "FRGLatticeEvaluation", "Interpolations", "SpinFRGLattices"]
 path = ".."
 uuid = "83e9f648-131d-4a3c-a1de-d155351cd207"
 version = "0.1.0"
@@ -1331,7 +1331,7 @@ weakdeps = ["ChainRulesCore"]
 deps = ["StaticArrays", "StructArrays", "Test"]
 path = "../../../SpinFRGLattices.jl"
 uuid = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
-version = "0.5.0"
+version = "0.4.2"
 
 [[deps.StableHashTraits]]
 deps = ["CRC32c", "Compat", "Dates", "SHA", "Tables", "TupleTools", "UUIDs"]
@@ -1618,7 +1618,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.7.0+0"
+version = "5.8.0+0"
 
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
