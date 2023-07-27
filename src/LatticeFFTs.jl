@@ -2,7 +2,7 @@ module LatticeFFTs
 
     using FFTViews, Interpolations,StaticArrays
     using FFTW
-    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT,getLatticeFFTPlan
+    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT,getLatticeFFTPlan,getInterpolatedFFT
     abstract type AbstractPadding end
     struct AutomaticPadding <: AbstractPadding end
     
@@ -25,8 +25,8 @@ module LatticeFFTs
         newDims =  max.(dims,newDims)
         shift = CartesianIndex(( (d ≠ nd) && iseven(nd)  for (d,nd) in zip(dims,newDims))...)
     
-        Origin = CartesianIndex((newDims .- dims).÷ 2 )
-    
+        Origin = CartesianIndex((newDims .- dims).÷ 2 #.+ isodd.(newDims)
+        )
         # @info "" dims newDims shift Origin
         PaddedChiR = zeros(T,newDims)
         for I in CartesianIndices(ChiR)
@@ -71,16 +71,6 @@ module LatticeFFTs
         return interpolatedFFT(chik)
     end
         
-    # function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding(),args...)
-    #     Chi_ij = padSusc(Chi_ij,padding)
-    #     nk = Tuple(0:N for N in size(Chi_ij))
-    #     FFT = getFFT(Chi_ij,args...)[nk...]
-    #     # k = Tuple(2π/N .* (0:N) for N in size(Chi_ij))
-    #     chik = Interpolations.interpolate(FFT, BSpline(Cubic()))
-    #     chik = extrapolate(chik,Periodic())
-    #     return chik
-    # end
-    
     abstract type AbstractPhaseShiftedFFT end
     
     struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
@@ -91,10 +81,6 @@ module LatticeFFTs
     end
     
     function (F::AbstractPhaseShiftedFFT)(k::AbstractVector)
-        # N = size(F.S) .-1
-        # # @info N
-        # n =  k .* N/2π
-        # n = N ./ 2π .* k
         exp(1im*k'*F.PhaseVector)* F.S((F.T'*k)...)
     end
 
