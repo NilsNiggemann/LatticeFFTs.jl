@@ -85,7 +85,7 @@ module LatticeFFTs
     end
 
     function (F::AbstractPhaseShiftedFFT)(x::Vararg{Number,NArgs}) where {NArgs}
-        k = SA[x...]
+        k = SVector(x)
         return F(k)
     end
     
@@ -109,10 +109,10 @@ module LatticeFFTs
 
     function (A::LatticeFFT)(k::AbstractVector)
         dim = size(A.S)
-        return sum(a(k) for a in A)/dim[1]
+        return real(sum(a(k) for a in A)/dim[1])
     end
     function (A::LatticeFFT)(x::Vararg{Number,NArgs}) where NArgs
-        k = SA[x...]
+        k = SVector(x)
         return A(k)
     end
     """returns interpolated FT object
