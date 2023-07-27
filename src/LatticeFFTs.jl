@@ -2,8 +2,7 @@ module LatticeFFTs
 
     using FFTViews, Interpolations,StaticArrays
     using FFTW
-    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT
-
+    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT,getLatticeFFTPlan
     abstract type AbstractPadding end
     struct AutomaticPadding <: AbstractPadding end
     
@@ -13,8 +12,8 @@ module LatticeFFTs
         - χ(r) is given in lattice coordinates, i.e. Chi[n1,n2,n3] corresponds to chi(0,n1*a1+n2*a2+n3*a3) 
         - The central index corresponds to chi(0,0). 
     """
-    function getFFT(ChiR)
-        chik = FFTView(fft(ifftshift(ChiR)))
+    function getFFT(ChiR,P = plan_fft(ChiR) )
+        chik = FFTView(P* ifftshift(ChiR))
         return chik
     end
 
@@ -53,10 +52,10 @@ module LatticeFFTs
         padSusc(ChiR,Tuple(val for s in size(ChiR)))
     end
     
-    function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding())
+    function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding(),args...)
         Chi_ij = padSusc(Chi_ij,padding)
         nk = Tuple(0:N for N in size(Chi_ij))
-        FFT = getFFT(Chi_ij)[nk...]
+        FFT = getFFT(Chi_ij,args...)[nk...]
         k = Tuple(2π/N .* (0:N) for N in size(Chi_ij))
         chik = Interpolations.interpolate(k,FFT, Gridded(Linear()))
         chik = extrapolate(chik,Periodic(OnGrid()))
@@ -76,7 +75,7 @@ module LatticeFFTs
 
     abstract type AbstractPhaseShiftedFFT end
     
-    struct PhaseShiftedFFT_1{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
+    struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
         S::InterpolationType
         T::BasisMat
         # UC::UCType
@@ -94,33 +93,56 @@ module LatticeFFTs
     
     import Base:size,getindex,setindex!,iterate,show,copy
 
-    struct LatticeFFT_1{Mat<:AbstractMatrix{<:AbstractPhaseShiftedFFT}} 
+    struct LatticeFFT{Mat<:AbstractMatrix{<:AbstractPhaseShiftedFFT}} 
         S::Mat
     end
 
-    LatticeFFT = LatticeFFT_1
     Base.getindex(S::LatticeFFT,i,j) = getindex(S.S,i,j)
     Base.setindex!(S::LatticeFFT,x,i,j) = setindex!(S.S,x,i,j)
     Base.iterate(S::LatticeFFT,i) = iterate(S.S,i)
     Base.iterate(S::LatticeFFT) = iterate(S.S)
 
     Base.size(S::LatticeFFT) = size(S.S)
-    Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.S),S.S)
+    Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.S))
 
-    function (A::LatticeFFT_1)(k::AbstractVector)
+    function (A::LatticeFFT)(k::AbstractVector)
         dim = size(A.S)
         return sum(a(k) for a in A)/dim[1]
     end
-    function (A::LatticeFFT_1)(args...)
+    function (A::LatticeFFT)(args...)
         k = SA[args...]
         return A(k)
     end
+    """returns interpolated FT object
 
-    function interpolatedFT(S_ab,BasisVectors::AbstractMatrix,UnitCellVectors::AbstractArray{<:AbstractArray},padding = AutomaticPadding())
+    interpolatedFT(
+        S_ab::AbstractMatrix{<:AbstractArray},
+        BasisVectors::AbstractMatrix,
+        UnitCellVectors::AbstractArray{<:AbstractArray},
+        padding = AutomaticPadding(),
+        plan = getLatticeFFTPlan(S_ab)
+    )
+    """
+    function interpolatedFT(
+            S_ab::AbstractMatrix{<:AbstractArray},
+            BasisVectors::AbstractMatrix,
+            UnitCellVectors::AbstractArray{<:AbstractArray},
+            padding = AutomaticPadding(),
+            plan = getLatticeFFTPlan(S_ab,padding)
+        )
         NCell,NCell2 = size(S_ab)
         @assert NCell == NCell2 "S_ab needs to be a square matrix"
-        Sk_ab = [PhaseShiftedFFT_1(getInterpolatedFFT(S_ab[α,β],padding),BasisVectors,UnitCellVectors[α] .- UnitCellVectors[β]) for α in 1:NCell,β in 1:NCell]
+        Sk_ab = [PhaseShiftedFFT(getInterpolatedFFT(S_ab[α,β],padding,plan),BasisVectors,UnitCellVectors[α] - UnitCellVectors[β]) for α in 1:NCell,β in 1:NCell]
         return LatticeFFT(Sk_ab)
     end
+
+    function getLatticeFFTPlan(S_ij::AbstractArray{<:Number},padding = AutomaticPadding())
+        return plan_fft(padSusc(S_ij,padding))
+    end
+
+    function getLatticeFFTPlan(S_ab::AbstractMatrix{<:AbstractArray},padding = AutomaticPadding())
+        return getLatticeFFTPlan(first(S_ab),padding)
+    end
+
 
 end # module LatticeFFTs

@@ -5,7 +5,7 @@ using FRGLatticeEvaluation
 import FRGLatticeEvaluation as FLE
 ##
 # S = Py.getPyrochlore(4,[1,-0.5,0.3,-0.2,0.1])
-S = Ho.getHoneycomb(2,[1,0.5])
+S = Ho.getHoneycomb(14,[1,0.4])
 Lattice = LatticeInfo(S,Ho)
 CorrInfo = FLE.getCorrelationPairs(Lattice)
 # S.couplings[1] = -3
@@ -24,7 +24,7 @@ function TestHoneycombBasis()
     # b1 = 0*Ho.Basis.b[2]
     return Basis_Struct_2D(a1=a1,a2=a2,b=[b0,b1],NNdist = norm(b1))
 end
-HoBasis2 = TestHoneycombBasis()
+HoBasis2 = Ho.Basis
 
 
 function FTNaive(k,Rivec,Rjvec,Sij)
@@ -39,6 +39,18 @@ function FTNaive(k,Rivec,Rjvec,Sij)
 end
 
 
+
+function reducedCorr(CorrInfo,a,b) 
+    inds = [i for (i,(ri,rj)) in enumerate(zip(CorrInfo.Ri_vec,CorrInfo.Rj_vec)) if ri.b == a && rj.b == b && S.couplings[CorrInfo.pairs[i]] != 0]
+    Ri = getCartesian.(CorrInfo.Ri_vec[inds],Ref(HoBasis2))
+    Rj = getCartesian.(CorrInfo.Rj_vec[inds],Ref(HoBasis2))
+    Rijvec = [ri .- rj for (ri,rj) in zip(Ri,Rj)]
+    Sij = -S.couplings[CorrInfo.pairs[inds]]
+    return (;Ri,Rj,Sij)
+    # FourierStruct(-S.couplings[CorrInfo.pairs[inds]],Rijvec,HoBasis2.NCell)
+end
+
+##
 function chiab(a,b) 
     inds = [i for (i,(ri,rj)) in enumerate(zip(CorrInfo.Ri_vec,CorrInfo.Rj_vec)) if ri.b == a && rj.b == b]
     Ri = getCartesian.(CorrInfo.Ri_vec[inds],Ref(HoBasis2))
@@ -52,7 +64,7 @@ end
 
 
 ##
-FFTInt = FLE.interpolatedChi(a,HoBasis2)
+FFTInt = FLE.interpolatedChi(a,Ho.Basis)
 
 using CairoMakie,StaticArrays
 let 
@@ -61,14 +73,12 @@ let
     ax1 = Axis(fig[1,1],aspect = 1)
     ax2 = Axis(fig[2,1],aspect = 1)
     k = LinRange(-8pi,8pi,100)
-
+    
     α = 1
     β = 2
-    # phase(k) = exp(1im*k'*(Ho.Basis.b[α]-Ho.Basis.b[β]))
-    # phase(k) = exp(1im*k[2]*Ho.Basis.b[β][2])
-    phase(k) = exp(1im*k'*(Ho.Basis.b[β]))
-    chi = [real(phase(SA[ki,kj]) * FFTInt[α,β](ki,kj))/Ho.Basis.NCell for ki in k, kj in k]
-    chi2 = [real(phase(SA[ki,kj]) * chiab(α,β)(ki,kj)) for ki in k, kj in k]
+
+    chi = [real(FFTInt[α,β](ki,kj)) for ki in k, kj in k]
+    chi2 = [real(chiab(α,β)(ki,kj)) for ki in k, kj in k]
     # chi2 = [real( chiab(α,β)(ki,kj)) for ki in k, kj in k]
     hm = heatmap!(ax1,k,k,chi)
     hm2 = heatmap!(ax2,k,k,chi2)
@@ -82,10 +92,10 @@ let
     fig = Figure()
     ax = Axis(fig[1,1],aspect = 1)
     k = LinRange(-8pi,8pi,100)
-    chi = [real(sum(chiab(ki,kj) for chiab in FFTInt)) for ki in k, kj in k]
+    chi = [real(FFTInt(ki,kj)) for ki in k, kj in k]
     chi2 = [chi2k(ki,kj) for ki in k, kj in k]
     hm = heatmap!(ax,k,k,chi)
-    # hm = heatmap!(ax,k,k,chi2)
+    hm = heatmap!(ax,k,k,chi2)
     Colorbar(fig[1,2],hm)
     fig
 end
