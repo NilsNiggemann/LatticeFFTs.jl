@@ -13,7 +13,7 @@ end
 @testset "1D chain" begin
     f1= 0.8*1pi
     @testset "$(("even","odd")[shift+1])" for shift in (0,1)
-        N = 3002+1
+        N = 20+1
         chi = OffsetArrays.centered(zeros(N))
 
         func2(i) = cos(f1*i)*exp(-(i)^2/40)
@@ -26,7 +26,7 @@ end
         chikextr = LatticeFFTs.getInterpolatedFFT(chiArray,512)
 
         for k in (f1,pi,0,0.13)
-            @test real(naiveFT(SA[k],chi,func2)) ≈ real(chikextr(k)) atol = 1e-4
+            @test real(naiveFT(SA[k],chi,func2)) ≈ real(chikextr(k)) atol = 1e-6
         end
     end
 end

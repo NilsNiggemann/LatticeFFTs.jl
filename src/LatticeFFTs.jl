@@ -1,6 +1,6 @@
 module LatticeFFTs
 
-    using FFTViews, Interpolations,StaticArrays
+    using FFTViews, Interpolations,StaticArrays, PaddedViews
     using FFTW
     export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT,getLatticeFFTPlan,getInterpolatedFFT
     abstract type AbstractPadding end
@@ -23,17 +23,9 @@ module LatticeFFTs
     function padSusc(ChiR::AbstractArray{T},newDims::Tuple) where T <: Number
         dims = size(ChiR)
         newDims =  max.(dims,newDims)
-        shift = CartesianIndex(( (d ≠ nd) && iseven(nd)  for (d,nd) in zip(dims,newDims))...)
-    
-        Origin = CartesianIndex((newDims .- dims).÷ 2 #.+ isodd.(newDims)
-        )
-        # @info "" dims newDims shift Origin
-        PaddedChiR = zeros(T,newDims)
-        for I in CartesianIndices(ChiR)
-            newI = I + shift + Origin
-            PaddedChiR[newI] = ChiR[I]
-        end
-        return PaddedChiR
+        
+        Origin = (newDims .- dims).÷ 2 .+2
+        return PaddedView(zero(T),ChiR,newDims,Origin)
     end
 
     """

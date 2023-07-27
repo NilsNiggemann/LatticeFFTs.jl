@@ -64,7 +64,7 @@ let
     # hlines!([8])
     # lines(k,OffsetArrays.no_offset_view(chiK))
     # xlims!(0,2*f2)
-    chikextr = LatticeFFTs.getInterpolatedFFT(chi,57)
+    chikextr = LatticeFFTs.getInterpolatedFFT(chi,56)
     chi = reshape([chi,],1,1)
     # chikextr = interpolatedFT(chi,[1;;],[[0,]],64)
     lines!(k./pi,real.(chikextr.(k)),color = :red)
