@@ -56,9 +56,9 @@ module LatticeFFTs
         S::T
     end
 
-    function (F::interpolatedFFT)(args...)
+    function (F::interpolatedFFT)(x::Vararg{Number,NArgs}) where NArgs
         N = size(F.S) .-1 # -1 since interpolation is between 0:N instead of 0:N-1
-        n =  args .* N./2π .+1 # +1 for Julia 1 based indexing
+        n =  x .* N./2π .+1 # +1 for Julia 1 based indexing
         return F.S(n...)
     end
 
@@ -70,7 +70,7 @@ module LatticeFFTs
         chik = extrapolate(chik,Periodic())
         return interpolatedFFT(chik)
     end
-        
+    
     abstract type AbstractPhaseShiftedFFT end
     
     struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
@@ -84,8 +84,8 @@ module LatticeFFTs
         exp(1im*k'*F.PhaseVector)* F.S((F.T'*k)...)
     end
 
-    function (F::AbstractPhaseShiftedFFT)(args...)
-        k = SA[args...]
+    function (F::AbstractPhaseShiftedFFT)(x::Vararg{Number,NArgs}) where {NArgs}
+        k = SA[x...]
         return F(k)
     end
     
@@ -111,8 +111,8 @@ module LatticeFFTs
         dim = size(A.S)
         return sum(a(k) for a in A)/dim[1]
     end
-    function (A::LatticeFFT)(args...)
-        k = SA[args...]
+    function (A::LatticeFFT)(x::Vararg{Number,NArgs}) where NArgs
+        k = SA[x...]
         return A(k)
     end
     """returns interpolated FT object
