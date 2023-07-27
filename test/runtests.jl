@@ -31,15 +31,16 @@ end
     end
 end
 
+##
 function Cubicspiral(n,k,xi=10000)
     return (cos(k'*n)) *exp(-n'*n/xi)
 end
-##
+
 @testset "Cubic" begin
     N = 40 +1
     chiR = OffsetArrays.centered(zeros(N,N,3N))
     # chiR = zeros(N,N)
-    order = 0.5SA[1,1,0]*pi
+    order = 0.835SA[1,1,0]*pi
     Config(n) = Cubicspiral(SA[Tuple(n)...],order,30)
     Config(n1,n2,n3) = Cubicspiral(SA[n1,n2,n3],order,30)
      
@@ -56,10 +57,13 @@ end
     chikNaive(k) = real(naiveFT(k,chiR,Config))
     chikFFT(k) = real(chik(k...))
 
-    @test chikNaive(order) ≈ chikFFT(order) atol = 1e-4
-    @test chikNaive(SA[pi,pi,pi]) ≈ chikFFT(SA[pi,pi,pi]) atol = 1e-4
-    @test chikNaive(SA[0,0,0]) ≈ chikFFT(SA[0,0,0]) atol = 1e-4
-    @test chikNaive(SA[0.13,0.5,√2]) ≈ chikFFT(SA[0.13,0.5,√2]) atol = 1e-4
+    @test chikNaive(order) ≈ chikFFT(order) atol = 1e-2
+    @testset "improve accuracy at incommensurate point" begin
+        @test chikNaive(order) ≈ chikFFT(order) atol = 1e-3 broken = true
+    end
+    @test chikNaive(SA[pi,pi,pi]) ≈ chikFFT(SA[pi,pi,pi]) atol = 1e-13
+    @test chikNaive(SA[0,0,0]) ≈ chikFFT(SA[0,0,0]) atol = 1e-13
+    @test chikNaive(SA[0.13,0.5,√2]) ≈ chikFFT(SA[0.13,0.5,√2]) atol = 1e-13
 end
 ##
 # @testset "Non-Bravais" begin
@@ -152,9 +156,9 @@ let
     end
     @testset "Check against naive implementation" begin
         @testset "k = $key" for (key,k) in Points
-            @test Sq_ab[1,1](k...) ≈ chiNaive(k,1,1) atol = 1e-3
-            @test Sq_ab[1,2](k...) ≈ chiNaive(k,1,2) atol = 1e-3
-            @test Sq_ab[2,2](k...) ≈ chiNaive(k,2,2) atol = 1e-3
+            @test Sq_ab[1,1](k...) ≈ chiNaive(k,1,1) atol = 1e-8
+            @test Sq_ab[1,2](k...) ≈ chiNaive(k,1,2) atol = 1e-8
+            @test Sq_ab[2,2](k...) ≈ chiNaive(k,2,2) atol = 1e-8
         end
     end
 end

@@ -64,7 +64,7 @@ end
 
 
 ##
-FFTInt = FLE.interpolatedChi(a,Ho.Basis)
+FFTInt = FLE.interpolatedChi(a,Ho.Basis,512)
 
 using CairoMakie,StaticArrays
 let 
@@ -72,7 +72,7 @@ let
     fig = Figure(resolution = 400 .*(1.2,2))
     ax1 = Axis(fig[1,1],aspect = 1)
     ax2 = Axis(fig[2,1],aspect = 1)
-    k = LinRange(-8pi,8pi,100)
+    k = LinRange(-8pi,8pi,300)
     
     α = 1
     β = 2

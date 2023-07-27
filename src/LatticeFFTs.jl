@@ -52,15 +52,34 @@ module LatticeFFTs
         padSusc(ChiR,Tuple(val for s in size(ChiR)))
     end
     
+    struct interpolatedFFT{T<:Interpolations.Extrapolation}
+        S::T
+    end
+
+    function (F::interpolatedFFT)(args...)
+        N = size(F.S) .-1 # -1 since interpolation is between 0:N instead of 0:N-1
+        n =  args .* N./2π .+1 # +1 for Julia 1 based indexing
+        return F.S(n...)
+    end
+
     function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding(),args...)
         Chi_ij = padSusc(Chi_ij,padding)
         nk = Tuple(0:N for N in size(Chi_ij))
         FFT = getFFT(Chi_ij,args...)[nk...]
-        k = Tuple(2π/N .* (0:N) for N in size(Chi_ij))
-        chik = Interpolations.interpolate(k,FFT, Gridded(Linear()))
-        chik = extrapolate(chik,Periodic(OnGrid()))
-        return chik
+        chik = Interpolations.interpolate(FFT, BSpline(Cubic()))
+        chik = extrapolate(chik,Periodic())
+        return interpolatedFFT(chik)
     end
+        
+    # function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding(),args...)
+    #     Chi_ij = padSusc(Chi_ij,padding)
+    #     nk = Tuple(0:N for N in size(Chi_ij))
+    #     FFT = getFFT(Chi_ij,args...)[nk...]
+    #     # k = Tuple(2π/N .* (0:N) for N in size(Chi_ij))
+    #     chik = Interpolations.interpolate(FFT, BSpline(Cubic()))
+    #     chik = extrapolate(chik,Periodic())
+    #     return chik
+    # end
     
     abstract type AbstractPhaseShiftedFFT end
     
@@ -72,6 +91,10 @@ module LatticeFFTs
     end
     
     function (F::AbstractPhaseShiftedFFT)(k::AbstractVector)
+        # N = size(F.S) .-1
+        # # @info N
+        # n =  k .* N/2π
+        # n = N ./ 2π .* k
         exp(1im*k'*F.PhaseVector)* F.S((F.T'*k)...)
     end
 
@@ -84,6 +107,10 @@ module LatticeFFTs
 
     struct LatticeFFT{Mat<:AbstractMatrix{<:AbstractPhaseShiftedFFT}} 
         S::Mat
+        function LatticeFFT(S::Mat) where Mat<:AbstractMatrix
+            @assert size(S,1) == size(S,2) "All elements of LatticeFFT need to have the same size"
+            return new{Mat}(S)
+        end
     end
 
     Base.getindex(S::LatticeFFT,i,j) = getindex(S.S,i,j)

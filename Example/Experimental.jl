@@ -1,6 +1,7 @@
 using StaticArrays, CairoMakie
 using OffsetArrays
 import FRGLatticeEvaluation as FLE
+using LatticeFFTs: fft, ifftshift, FFTViews
 ##
 function naiveDFT(chiR)
     N = size(chiR,1)
@@ -32,9 +33,9 @@ function dressFT!(chiK)
 end
 ##
 let 
-    f1= 0.8*1pi
-    N = 211
-    Nreal = 100
+    f1= 1/3*1pi
+    N = 32
+    Nreal = 32
     chi = OffsetArrays.centered(zeros(N))
     # chi = zeros(N)
     func2(i) = abs(i) > Nreal ? 0. : cos(f1*i)*exp(-(i)^2/40)
@@ -42,32 +43,34 @@ let
     chi = func.(eachindex(chi))
 
     
-    k2 = LinRange(-2pi,2pi,1000)
-    chiKCont = [naiveFT(k,chi,func2) for k in k2]
+    k = LinRange(105pi,106pi,500)
+    chiKCont = [naiveFT(i,chi,func2) for i in k]
     chi = OffsetArrays.no_offset_view(chi)
-    lines(chi) |> display
+    # lines(chi) |> display
     # chiKfft = rel(dressFT!(fft(chi)))
     # chiKfft = real(fft(fftshift(chi)))
-    chiKfft = real(fft(ifftshift(chi)))
+    chiKfft = real(fft(LatticeFFTs.ifftshift(chi)))
     # chiKfftView = FFTView(fft(ifftshift(chi)))
 
     chiK = real(naiveDFT(chi))
     # chiK = naiveDFT(chi)
-    k = FFTViews.fftfreq(N)*2
+    # k = FFTViews.fftfreq(N)*2
     # push!(chiK,chiK[1])
     # k = 2piN*eachindex(chiK))
     # scatter(k,chiKfft)
-    scatter(k,chiKfft)
+    # scatter(k,chiKfft)
     # scatter!(k,chiK)
-    lines!(k2./pi,chiKCont,color = :black, linewidth = 5)
+    lines(k./pi,chiKCont,color = :black, linewidth = 5)
     # hlines!([8])
     # lines(k,OffsetArrays.no_offset_view(chiK))
     # xlims!(0,2*f2)
-    chikextr = FLE.getInterpolatedFFT(chi,512)
-    k = LinRange(-2pi,6pi,500)
+    chikextr = LatticeFFTs.getInterpolatedFFT(chi,58)
+    chi = reshape([chi,],1,1)
+    # chikextr = interpolatedFT(chi,[1;;],[[0,]],64)
     lines!(k./pi,real.(chikextr.(k)),color = :red)
+    # lines!(k./pi,real.(chikextr.(k*64/2pi)),color = :red)
     kBZ = -N:N
-    vlines!(f1/pi .* -1:2:6,color = :grey,linestyle = :dash)
+    # vlines!(f1/pi .* -1:2:6,color = :grey,linestyle = :dash)
     # lines!(2 .*kBZ ./N,real(chiKfftView[kBZ]),color = :red)
     
     current_figure()
