@@ -62,17 +62,6 @@ module LatticeFFTs
         return chik
     end
     
-        
-    function interpolatedChi(Chi_ab,Basis)
-        chiKab = [getInterpolatedFFT(chi,64) for chi in Chi_ab]
-        T = Basis.T
-        Tinv = inv(T)
-
-        chi(α,β,k) = exp(1im*k'*(Basis.b[α]-Basis.b[β]))* chiKab[α,β]((Tinv'*k)...)
-
-        return [(args...)->chi(α,β,SA[args...]) for α in 1:Basis.NCell, β in 1:Basis.NCell]
-    end
-
     abstract type AbstractPhaseShiftedFFT end
     
     struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
