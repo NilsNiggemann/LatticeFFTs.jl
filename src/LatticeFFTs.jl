@@ -44,23 +44,17 @@ module LatticeFFTs
         padSusc(ChiR,Tuple(val for s in size(ChiR)))
     end
     
-    struct interpolatedFFT{T<:Interpolations.Extrapolation}
-        S::T
-    end
-
-    function (F::interpolatedFFT)(x::Vararg{Number,NArgs}) where NArgs
-        N = size(F.S) .-1 # -1 since interpolation is between 0:N instead of 0:N-1
-        n =  x .* N./2π .+1 # +1 for Julia 1 based indexing
-        return F.S(n...)
-    end
 
     function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real},padding = AutomaticPadding(),args...)
         Chi_ij = padSusc(Chi_ij,padding)
-        nk = Tuple(0:N for N in size(Chi_ij))
+        dims = size(Chi_ij)
+        nk = Tuple(0:N for N in dims)
         FFT = getFFT(Chi_ij,args...)[nk...]
-        chik = Interpolations.interpolate(FFT, BSpline(Cubic()))
+        # chik = Interpolations.interpolate!(FFT,BSpline(Cubic(InPlace(OnGrid()))))
+        chik = Interpolations.interpolate(FFT,BSpline(Cubic()))
+        chik = scale(chik,2π./dims .* nk)
         chik = extrapolate(chik,Periodic())
-        return interpolatedFFT(chik)
+        return chik
     end
     
     abstract type AbstractPhaseShiftedFFT end

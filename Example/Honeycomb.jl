@@ -64,7 +64,7 @@ end
 
 
 ##
-FFTInt = FLE.interpolatedChi(a,Ho.Basis,65)
+FFTInt = FLE.interpolatedChi(a,Ho.Basis,64)
 
 using CairoMakie,StaticArrays
 let 
