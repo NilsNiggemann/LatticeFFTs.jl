@@ -122,7 +122,7 @@ let
     
     Sij_ab = [Sij(a,b) for a in 1:2, b in 1:2]
     
-    Sq_ab = interpolatedFT(Sij_ab,[a1 a2],b,256)
+    Sq_ab = getLatticeFFT(Sij_ab,[a1 a2],b,256)
     k = LinRange(-8pi,8pi,100)
     
     α = 1

@@ -2,7 +2,10 @@ module LatticeFFTs
 
     using FFTViews, Interpolations,StaticArrays, PaddedViews
     using FFTW
-    export interpolatedFT, padSusc, AutomaticPadding, LatticeFFT,getLatticeFFTPlan,getInterpolatedFFT
+
+    export getLatticeFFT, LatticeFFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT
+    
+    abstract type AbstractLatticeFFT end
     abstract type AbstractPadding end
     struct AutomaticPadding <: AbstractPadding end
     
@@ -57,27 +60,25 @@ module LatticeFFTs
         return chik
     end
     
-    abstract type AbstractPhaseShiftedFFT end
-    
-    struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractPhaseShiftedFFT
+    struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractLatticeFFT
         S::InterpolationType
         T::BasisMat
         # UC::UCType
         PhaseVector::PhaseVecType
     end
     
-    function (F::AbstractPhaseShiftedFFT)(k::AbstractVector)
+    function (F::AbstractLatticeFFT)(k::AbstractVector)
         exp(1im*k'*F.PhaseVector)* F.S((F.T'*k)...)
     end
 
-    function (F::AbstractPhaseShiftedFFT)(x::Vararg{Number,NArgs}) where {NArgs}
+    function (F::AbstractLatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
         k = SVector(x)
         return F(k)
     end
     
     import Base:size,getindex,setindex!,iterate,show,copy
 
-    struct LatticeFFT{Mat<:AbstractMatrix{<:AbstractPhaseShiftedFFT}} 
+    struct LatticeFFT{Mat<:AbstractMatrix{<:AbstractLatticeFFT}} <: AbstractLatticeFFT
         S::Mat
         function LatticeFFT(S::Mat) where Mat<:AbstractMatrix
             @assert size(S,1) == size(S,2) "All elements of LatticeFFT need to have the same size"
@@ -111,7 +112,7 @@ module LatticeFFTs
         plan = getLatticeFFTPlan(S_ab)
     )
     """
-    function interpolatedFT(
+    function getLatticeFFT(
             S_ab::AbstractMatrix{<:AbstractArray},
             BasisVectors::AbstractMatrix,
             UnitCellVectors::AbstractArray{<:AbstractArray},
