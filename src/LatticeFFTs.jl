@@ -3,7 +3,7 @@ module LatticeFFTs
 using FFTViews, Interpolations, StaticArrays, PaddedViews
 using FFTW
 
-export getLatticeFFT, LatticeFFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT
+export getLatticeFFT, LatticeFFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT
 
 abstract type AbstractLatticeFFT end
 abstract type AbstractPadding end
@@ -94,10 +94,30 @@ Base.iterate(S::LatticeFFT) = iterate(S.S)
 Base.size(S::LatticeFFT) = size(S.S)
 Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.S))
 
+""" 
+evaluate the full Fourier transform averaging over all sublattices. Semantically equivalent to
+    ```
+    function (A::LatticeFFT)(k::AbstractVector)
+        dim = size(A.S)
+        return real(sum(a(k) for a in diag(A)) + )  / dim[1]
+    end
+    ```
+"""
 function (A::LatticeFFT)(k::AbstractVector)
-    dim = size(A.S)
-    return real(sum(a(k) for a in A) / dim[1])
+    dim = size(A)#
+    res = 0
+    for i in axes(A.S, 1)
+        for j in axes(A.S, 2)
+            if i == j
+                res += real(A[i, j](k))
+            elseif i < j
+                res += 2real(A[i, j](k))
+            end
+        end
+    end
+    return  res / dim[1]
 end
+
 function (A::LatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
     k = SVector(x)
     return A(k)
