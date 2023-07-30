@@ -68,7 +68,6 @@ end
     end
 end
 ##
-# @testset "Non-Bravais" begin
 
 
 function ComplexFourier(Rij_vec,Sij_vec,k)
@@ -79,8 +78,9 @@ function ComplexFourier(Rij_vec,Sij_vec,k)
     return Chi_k
 end
 
-# @testset "Non-Bravais" verbose = true begin
-let
+
+
+function getHoneycombTest()
     J1 = -1.0
     J2 = -0.4
 
@@ -89,6 +89,7 @@ let
     a1 = SA[1,0]
 
     a2 = SA[-1/2,√(3/4)]
+
     b = [SA[0,0],SA[0,1/√3]]
 
     cart(Ri) = Ri[1]*a1 + Ri[2]*a2 + b[Ri[3]]
@@ -119,20 +120,21 @@ let
 
     Sij(a,b) = [S((0,0,a),(;n1,n2,b)) for n1 in -L:L, n2 in -L:L]
 
-    
     Sij_ab = [Sij(a,b) for a in 1:2, b in 1:2]
     
-    Sq_ab = getLatticeFFT(Sij_ab,[a1 a2],b,256)
-    k = LinRange(-8pi,8pi,100)
+    Rij_vec_(a,b) = [(cart(Ri)-cart(Rj)) for Ri in UC for Rj in Lattice if Ri.b == a && Rj.b == b]
+    Sij_vec_(a,b) = [S(Ri,Rj) for Ri in UC for Rj in Lattice if Ri.b == a && Rj.b == b]
     
-    α = 1
-    β = 2
+    Rij_vec = [Rij_vec_(a,b) for a in 1:2, b in 1:2]
+    Sij_vec = [Sij_vec_(a,b) for a in 1:2, b in 1:2]
 
-    Rij_vec(a,b) = [(cart(Ri)-cart(Rj)) for Ri in UC for Rj in Lattice if Ri.b == a && Rj.b == b]
-    Sij_vec(a,b) = [S(Ri,Rj) for Ri in UC for Rj in Lattice if Ri.b == a && Rj.b == b]
-    chiNaive(k::SVector,a,b) = ComplexFourier(Rij_vec(a,b),Sij_vec(a,b),k)
-    chiNaive(k,a,b) = chiNaive(SA[k...],a,b)
-     
+    return (;a1,a2,b,Sij_ab,Rij_vec,Sij_vec)
+end 
+
+testLattice = getHoneycombTest()
+##
+function testLatticeFFT(Sq_ab,chiNaive)
+         
     Points = Dict([
         "Γ" => (0,0),
         "K" => (4π/3,0),
@@ -163,4 +165,18 @@ let
             @test Sq_ab[2,2](k...) ≈ chiNaive(k,2,2) atol = 1e-8
         end
     end
+
+end
+
+@testset "Non-Bravais" verbose = true begin
+    (;a1,a2,b) = testLattice
+    Sq_ab = getLatticeFFT(testLattice.Sij_ab,[a1 a2],b,256)
+
+    α = 1
+    β = 2
+
+    chiNaive(k::SVector,a,b) = ComplexFourier(testLattice.Rij_vec[a,b],testLattice.Sij_vec[a,b],k)
+    chiNaive(k,a,b) = chiNaive(SA[k...],a,b)
+
+    testLatticeFFT(Sq_ab,chiNaive)
 end
