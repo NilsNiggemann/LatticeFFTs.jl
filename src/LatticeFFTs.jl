@@ -94,7 +94,7 @@ Base.getindex(S::LatticeFT, i, j) = getindex(S.S, i, j)
 Base.setindex!(S::LatticeFT, x, i, j) = setindex!(S.S, x, i, j)
 Base.iterate(S::LatticeFT, i) = iterate(S.S, i)
 Base.iterate(S::LatticeFT) = iterate(S.S)
-Base.axes(S::LatticeFT,i) = axes(S.S,i)
+Base.axes(S::LatticeFT, i) = axes(S.S, i)
 
 Base.size(S::LatticeFT) = size(S.S)
 Base.copy(S::LatticeFT) = LatticeFT(copy(S.S))
@@ -120,7 +120,7 @@ function (A::LatticeFT)(k::AbstractVector)
             end
         end
     end
-    return  res / dim[1]
+    return res / dim[1]
 end
 
 function (A::LatticeFT)(x::Vararg{Number,NArgs}) where {NArgs}
@@ -139,12 +139,12 @@ interpolatedFT(
 )
 """
 function getLatticeFFT(
-        S_ab::AbstractMatrix{<:AbstractArray},
-        BasisVectors::AbstractMatrix,
-        UnitCellVectors::AbstractArray{<:AbstractArray},
-        padding=AutomaticPadding(),
-        plan=getLatticeFFTPlan(S_ab, padding)
-    )
+    S_ab::AbstractMatrix{<:AbstractArray},
+    BasisVectors::AbstractMatrix,
+    UnitCellVectors::AbstractArray{<:AbstractArray},
+    padding=AutomaticPadding(),
+    plan=getLatticeFFTPlan(S_ab, padding)
+)
 
     NCell, NCell2 = size(S_ab)
     @assert NCell == NCell2 "S_ab needs to be a square matrix"
