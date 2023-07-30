@@ -1,9 +1,11 @@
 module LatticeFFTs
 
+
 using FFTViews, Interpolations, StaticArrays, PaddedViews
 using FFTW
+using LoopVectorization
 
-export getLatticeFFT, LatticeFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT, AbstractLatticeFourierTransform
+export getLatticeFFT, LatticeFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT, AbstractLatticeFourierTransform, naiveSubLatticeFT
 
 abstract type AbstractLatticeFourierTransform end
 abstract type AbstractLatticeFFT <: AbstractLatticeFourierTransform end
@@ -159,4 +161,6 @@ function getLatticeFFTPlan(S_ab::AbstractMatrix{<:AbstractArray}, padding=Automa
 end
 
 include("NaiveFT.jl")
+export naiveLatticeFT
+
 end # module LatticeFFTs

@@ -1,4 +1,3 @@
-using LoopVectorization
 struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractVector{<:Number}}} <: AbstractLatticeFourierTransform
     Sij::Vec
     Rij::Mat
