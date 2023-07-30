@@ -1,5 +1,6 @@
-using Test,OffsetArrays, StaticArrays
 using LatticeFFTs
+##
+using Test,OffsetArrays, StaticArrays
 ##
 function naiveFT(k::AbstractVector,chiR,func)
     chik = 0. +0im
@@ -128,7 +129,7 @@ function getHoneycombTest()
     Rij_vec = [Rij_vec_(a,b) for a in 1:2, b in 1:2]
     Sij_vec = [Sij_vec_(a,b) for a in 1:2, b in 1:2]
 
-    return (;a1,a2,b,Sij_ab,Rij_vec,Sij_vec)
+    return (;a = [a1 a2] ,b,Sij_ab,Rij_vec,Sij_vec)
 end 
 
 testLattice = getHoneycombTest()
@@ -136,47 +137,64 @@ testLattice = getHoneycombTest()
 function testLatticeFFT(Sq_ab,chiNaive)
          
     Points = Dict([
-        "Γ" => (0,0),
-        "K" => (4π/3,0),
-        "M" => (π, -π/√3),
-        "(π,π)" => (π,π),
-        "(√(22),100/3" => (√(22),100/3)
+        "Γ" => SVector(0,0),
+        "K" => SVector(4π/3,0),
+        "M" => SVector(π, -π/√3),
+        "(π,π)" => SVector(π,π),
+        "(√(22),100/3" => SVector(√(22),100/3)
     ]
     )
 
     @testset "diag real" begin
         @testset "k = $key" for (key,k) in Points
-            Sq_11 = Sq_ab[1,1](k...)
-            Sq_22 = Sq_ab[2,2](k...)
+            Sq_11 = Sq_ab[1,1](k)
+            Sq_22 = Sq_ab[2,2](k)
             @test imag(Sq_11) ≈ 0 atol = 1e-14
             @test imag(Sq_22) ≈ 0 atol = 1e-14
         end
     end
     @testset "sublattices equivalent" begin
         @testset "k = $key" for (key,k) in Points
-            @test Sq_ab[1,1](k...) ≈ Sq_ab[2,2](k...) atol = 1e-14
-            @test Sq_ab[1,2](k...) ≈ Sq_ab[2,1](k...)' atol = 1e-14
+            @test Sq_ab[1,1](k) ≈ Sq_ab[2,2](k) atol = 1e-14
+            @test Sq_ab[1,2](k) ≈ Sq_ab[2,1](k)' atol = 1e-14
+        end
+    end
+    
+    @testset "Sublattice average" begin
+        @testset "k = $key" for (key,k) in Points
+            Sq = sum(sq(k) for sq in Sq_ab)/size(Sq_ab)[1]
+            @test Sq_ab(k) ≈ Sq atol = 1e-14
         end
     end
     @testset "Check against naive implementation" begin
         @testset "k = $key" for (key,k) in Points
-            @test Sq_ab[1,1](k...) ≈ chiNaive(k,1,1) atol = 1e-8
-            @test Sq_ab[1,2](k...) ≈ chiNaive(k,1,2) atol = 1e-8
-            @test Sq_ab[2,2](k...) ≈ chiNaive(k,2,2) atol = 1e-8
+            @test Sq_ab[1,1](k) ≈ chiNaive[1,1](k) atol = 1e-8
+            @test Sq_ab[1,2](k) ≈ chiNaive[1,2](k) atol = 1e-8
+            @test Sq_ab[2,2](k) ≈ chiNaive[2,2](k) atol = 1e-8
         end
     end
 
 end
 
-@testset "Non-Bravais" verbose = true begin
-    (;a1,a2,b) = testLattice
-    Sq_ab = getLatticeFFT(testLattice.Sij_ab,[a1 a2],b,256)
+@testset "Non-Bravais: naive" verbose = true begin
+    (;a,b) = testLattice
 
-    α = 1
-    β = 2
+    ChiNaiveFast = LatticeFFTs.naiveLatticeFT(testLattice.Sij_ab,a,b)
 
-    chiNaive(k::SVector,a,b) = ComplexFourier(testLattice.Rij_vec[a,b],testLattice.Sij_vec[a,b],k)
-    chiNaive(k,a,b) = chiNaive(SA[k...],a,b)
+    chiNaive = [k-> ComplexFourier(testLattice.Rij_vec[a,b],testLattice.Sij_vec[a,b],k) for a in 1:2, b in 1:2]
+
+    testLatticeFFT(ChiNaiveFast,chiNaive)
+
+end
+##
+@testset "Non-Bravais FFT" verbose = true begin
+    (;a,b) = testLattice
+    Sq_ab = getLatticeFFT(testLattice.Sij_ab,a,b,256)
+    ChiNaiveFast = LatticeFFTs.naiveLatticeFT(testLattice.Sij_ab,a,b)
+
+    chiNaive = [k-> ComplexFourier(testLattice.Rij_vec[a,b],testLattice.Sij_vec[a,b],k) for a in 1:2, b in 1:2]
+
 
     testLatticeFFT(Sq_ab,chiNaive)
+
 end

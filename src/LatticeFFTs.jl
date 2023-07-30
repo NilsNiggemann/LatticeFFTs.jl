@@ -3,9 +3,11 @@ module LatticeFFTs
 using FFTViews, Interpolations, StaticArrays, PaddedViews
 using FFTW
 
-export getLatticeFFT, LatticeFFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT
+export getLatticeFFT, LatticeFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT, AbstractLatticeFourierTransform
 
-abstract type AbstractLatticeFFT end
+abstract type AbstractLatticeFourierTransform end
+abstract type AbstractLatticeFFT <: AbstractLatticeFourierTransform end
+
 abstract type AbstractPadding end
 struct AutomaticPadding <: AbstractPadding end
 
@@ -67,32 +69,33 @@ struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:
     PhaseVector::PhaseVecType
 end
 
-function (F::AbstractLatticeFFT)(k::AbstractVector)
+@inline function (F::AbstractLatticeFFT)(k::AbstractVector)
     exp(1im * k' * F.PhaseVector) * F.S((F.T' * k)...)
 end
 
-function (F::AbstractLatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
+@inline function (F::AbstractLatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
     k = SVector(x)
     return F(k)
 end
 
 import Base: size, getindex, setindex!, iterate, show, copy
 
-struct LatticeFFT{Mat<:AbstractMatrix{<:AbstractLatticeFFT}} <: AbstractLatticeFFT
+struct LatticeFT{Mat<:AbstractMatrix{<:AbstractLatticeFourierTransform}} <: AbstractLatticeFourierTransform
     S::Mat
-    function LatticeFFT(S::Mat) where {Mat<:AbstractMatrix}
+    function LatticeFT(S::Mat) where {Mat<:AbstractMatrix}
         @assert size(S, 1) == size(S, 2) "All elements of LatticeFFT need to have the same size"
         return new{Mat}(S)
     end
 end
 
-Base.getindex(S::LatticeFFT, i, j) = getindex(S.S, i, j)
-Base.setindex!(S::LatticeFFT, x, i, j) = setindex!(S.S, x, i, j)
-Base.iterate(S::LatticeFFT, i) = iterate(S.S, i)
-Base.iterate(S::LatticeFFT) = iterate(S.S)
+Base.getindex(S::LatticeFT, i, j) = getindex(S.S, i, j)
+Base.setindex!(S::LatticeFT, x, i, j) = setindex!(S.S, x, i, j)
+Base.iterate(S::LatticeFT, i) = iterate(S.S, i)
+Base.iterate(S::LatticeFT) = iterate(S.S)
+Base.axes(S::LatticeFT,i) = axes(S.S,i)
 
-Base.size(S::LatticeFFT) = size(S.S)
-Base.copy(S::LatticeFFT) = LatticeFFT(copy(S.S))
+Base.size(S::LatticeFT) = size(S.S)
+Base.copy(S::LatticeFT) = LatticeFT(copy(S.S))
 
 """ 
 evaluate the full Fourier transform averaging over all sublattices. Semantically equivalent to
@@ -103,11 +106,11 @@ evaluate the full Fourier transform averaging over all sublattices. Semantically
     end
     ```
 """
-function (A::LatticeFFT)(k::AbstractVector)
+function (A::LatticeFT)(k::AbstractVector)
     dim = size(A)#
     res = 0
-    for i in axes(A.S, 1)
-        for j in axes(A.S, 2)
+    for i in axes(A, 1)
+        for j in axes(A, 2)
             if i == j
                 res += real(A[i, j](k))
             elseif i < j
@@ -118,10 +121,11 @@ function (A::LatticeFFT)(k::AbstractVector)
     return  res / dim[1]
 end
 
-function (A::LatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
+function (A::LatticeFT)(x::Vararg{Number,NArgs}) where {NArgs}
     k = SVector(x)
     return A(k)
 end
+
 """returns interpolated FT object
 
 interpolatedFT(
@@ -133,16 +137,17 @@ interpolatedFT(
 )
 """
 function getLatticeFFT(
-    S_ab::AbstractMatrix{<:AbstractArray},
-    BasisVectors::AbstractMatrix,
-    UnitCellVectors::AbstractArray{<:AbstractArray},
-    padding=AutomaticPadding(),
-    plan=getLatticeFFTPlan(S_ab, padding)
-)
+        S_ab::AbstractMatrix{<:AbstractArray},
+        BasisVectors::AbstractMatrix,
+        UnitCellVectors::AbstractArray{<:AbstractArray},
+        padding=AutomaticPadding(),
+        plan=getLatticeFFTPlan(S_ab, padding)
+    )
+
     NCell, NCell2 = size(S_ab)
     @assert NCell == NCell2 "S_ab needs to be a square matrix"
     Sk_ab = [PhaseShiftedFFT(getInterpolatedFFT(S_ab[α, β], padding, plan), BasisVectors, UnitCellVectors[α] - UnitCellVectors[β]) for α in 1:NCell, β in 1:NCell]
-    return LatticeFFT(Sk_ab)
+    return LatticeFT(Sk_ab)
 end
 
 function getLatticeFFTPlan(S_ij::AbstractArray{<:Number}, padding=AutomaticPadding())
@@ -153,5 +158,5 @@ function getLatticeFFTPlan(S_ab::AbstractMatrix{<:AbstractArray}, padding=Automa
     return getLatticeFFTPlan(first(S_ab), padding)
 end
 
-
+include("NaiveFT.jl")
 end # module LatticeFFTs
