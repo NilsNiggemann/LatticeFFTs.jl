@@ -68,8 +68,6 @@ end
     return F(k)
 end
 
-import Base: size, getindex, setindex!, iterate, show, copy
-
 struct LatticeFT{Mat<:AbstractMatrix{<:AbstractSubLatticeFT}} <: AbstractLatticeFT{AbstractSubLatticeFT}
     S::Mat
     function LatticeFT(S::Mat) where {Mat<:AbstractMatrix{<:AbstractSubLatticeFT}}
@@ -78,12 +76,10 @@ struct LatticeFT{Mat<:AbstractMatrix{<:AbstractSubLatticeFT}} <: AbstractLattice
     end
 end
 
+
 Base.size(S::LatticeFT) = size(S.S)
 Base.getindex(S::LatticeFT, I::Vararg{Int, N}) where N	= getindex(S.S, I...)
 Base.setindex!(S::LatticeFT, x, I::Vararg{Int, N}) where N = setindex!(S.S, x, I...)
-Base.iterate(S::LatticeFT, i) = iterate(S.S, i)
-Base.iterate(S::LatticeFT) = iterate(S.S)
-Base.axes(S::LatticeFT, i) = axes(S.S, i)
 
 Base.copy(S::LatticeFT) = LatticeFT(copy(S.S))
 
