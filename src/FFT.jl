@@ -52,39 +52,39 @@ function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real}, padding=AutomaticPadd
     return chik
 end
 
-struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractLatticeFFT
+struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:AbstractVector} <: AbstractSubLatticeFT
     S::InterpolationType
     T::BasisMat
     # UC::UCType
     PhaseVector::PhaseVecType
 end
 
-@inline function (F::AbstractLatticeFFT)(k::AbstractVector)
+@inline function (F::PhaseShiftedFFT)(k::AbstractVector)
     exp(1im * k' * F.PhaseVector) * F.S((F.T' * k)...)
 end
 
-@inline function (F::AbstractLatticeFFT)(x::Vararg{Number,NArgs}) where {NArgs}
+@inline function (F::PhaseShiftedFFT)(x::Vararg{Number,NArgs}) where {NArgs}
     k = SVector(x)
     return F(k)
 end
 
 import Base: size, getindex, setindex!, iterate, show, copy
 
-struct LatticeFT{Mat<:AbstractMatrix{<:AbstractLatticeFourierTransform}} <: AbstractLatticeFourierTransform
+struct LatticeFT{Mat<:AbstractMatrix{<:AbstractSubLatticeFT}} <: AbstractLatticeFT{AbstractSubLatticeFT}
     S::Mat
-    function LatticeFT(S::Mat) where {Mat<:AbstractMatrix}
+    function LatticeFT(S::Mat) where {Mat<:AbstractMatrix{<:AbstractSubLatticeFT}}
         @assert size(S, 1) == size(S, 2) "All elements of LatticeFFT need to have the same size"
         return new{Mat}(S)
     end
 end
 
-Base.getindex(S::LatticeFT, i, j) = getindex(S.S, i, j)
-Base.setindex!(S::LatticeFT, x, i, j) = setindex!(S.S, x, i, j)
+Base.size(S::LatticeFT) = size(S.S)
+Base.getindex(S::LatticeFT, I::Vararg{Int, N}) where N	= getindex(S.S, I...)
+Base.setindex!(S::LatticeFT, x, I::Vararg{Int, N}) where N = setindex!(S.S, x, I...)
 Base.iterate(S::LatticeFT, i) = iterate(S.S, i)
 Base.iterate(S::LatticeFT) = iterate(S.S)
 Base.axes(S::LatticeFT, i) = axes(S.S, i)
 
-Base.size(S::LatticeFT) = size(S.S)
 Base.copy(S::LatticeFT) = LatticeFT(copy(S.S))
 
 """ 

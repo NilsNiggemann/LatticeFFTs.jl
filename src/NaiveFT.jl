@@ -1,4 +1,4 @@
-struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractVector{<:Number}}} <: AbstractLatticeFourierTransform
+struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractVector{<:Number}}} <: AbstractSubLatticeFT
     Sij::Vec
     Rij::Mat
 end

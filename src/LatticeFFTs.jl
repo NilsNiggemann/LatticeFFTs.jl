@@ -5,10 +5,10 @@ using FFTViews, Interpolations, StaticArrays, PaddedViews
 using FFTW
 using LoopVectorization
 
-export getLatticeFFT, LatticeFT, getLatticeFFTPlan, getInterpolatedFFT, AbstractLatticeFFT, PhaseShiftedFFT, AbstractLatticeFourierTransform, naiveSubLatticeFT
+export getLatticeFFT, LatticeFT, getLatticeFFTPlan, getInterpolatedFFT, PhaseShiftedFFT, AbstractLatticeFT, naiveSubLatticeFT
 
-abstract type AbstractLatticeFourierTransform end
-abstract type AbstractLatticeFFT <: AbstractLatticeFourierTransform end
+abstract type AbstractSubLatticeFT end
+abstract type AbstractLatticeFT{T<:AbstractSubLatticeFT} <: AbstractMatrix{T} end
 
 include("FFT.jl")
 
