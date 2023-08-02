@@ -40,13 +40,18 @@ function padSusc(ChiR::AbstractArray{T}, val::Integer) where {T<:Number}
 end
 
 
-function getInterpolatedFFT(Chi_ij::AbstractArray{<:Real}, padding=AutomaticPadding(), args...)
+function getInterpolatedFFT(
+    Chi_ij::AbstractArray{<:Real}, 
+    padding=AutomaticPadding(), 
+    args...;
+    Interpolation = BSpline(Cubic())
+    )
     Chi_ij = padSusc(Chi_ij, padding)
     dims = size(Chi_ij)
     nk = Tuple(0:N for N in dims)
     FFT = getFFT(Chi_ij, args...)[nk...]
     # chik = Interpolations.interpolate!(FFT,BSpline(Cubic(InPlace(OnGrid()))))
-    chik = Interpolations.interpolate(FFT, BSpline(Cubic()))
+    chik = Interpolations.interpolate(FFT, Interpolation)
     chik = scale(chik, 2π ./ dims .* nk)
     chik = extrapolate(chik, Periodic())
     return chik
@@ -120,7 +125,10 @@ interpolatedFT(
     UnitCellVectors::AbstractArray{<:AbstractArray},
     padding = AutomaticPadding(),
     plan = getLatticeFFTPlan(S_ab)
+    kwargs,... 
 )
+kwargs are passed to getInterpolatedFFT: 
+    Interpolation = BSpline(Cubic())
 """
 function getLatticeFFT(
     S_ab::AbstractMatrix{<:AbstractArray},
@@ -128,11 +136,12 @@ function getLatticeFFT(
     UnitCellVectors::AbstractArray{<:AbstractArray},
     padding=AutomaticPadding(),
     plan=getLatticeFFTPlan(S_ab, padding)
+    ;kwargs...
 )
 
     NCell, NCell2 = size(S_ab)
     @assert NCell == NCell2 "S_ab needs to be a square matrix"
-    Sk_ab = [PhaseShiftedFFT(getInterpolatedFFT(S_ab[α, β], padding, plan), BasisVectors, UnitCellVectors[α] - UnitCellVectors[β]) for α in 1:NCell, β in 1:NCell]
+    Sk_ab = [PhaseShiftedFFT(getInterpolatedFFT(S_ab[α, β], padding, plan; kwargs...), BasisVectors, UnitCellVectors[α] - UnitCellVectors[β]) for α in 1:NCell, β in 1:NCell]
     return LatticeFT(Sk_ab)
 end
 
