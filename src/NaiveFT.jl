@@ -3,7 +3,7 @@ struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractV
     Rij::Mat
 end
 
-@inline function (F::naiveSubLatticeFT)(kx::Real, ky::Real)
+@inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat)
     Chi_k_re = 0
     Chi_k_im = 0
     (; Sij, Rij) = F
@@ -23,7 +23,7 @@ end
     return Chi_k_re + 1im * Chi_k_im
 end
 
-@inline function (F::naiveSubLatticeFT)(kx::Real, ky::Real, kz::Real)
+@inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat, kz::AbstractFloat)
     Chi_k_re = 0
     Chi_k_im = 0
     (; Sij, Rij) = F
