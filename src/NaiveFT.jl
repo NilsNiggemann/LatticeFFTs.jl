@@ -2,6 +2,11 @@ struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractV
     Sij::Vec
     Rij::Mat
 end
+function Base.:+(F::naiveSubLatticeFT, G::naiveSubLatticeFT) 
+    Sij = vcat(F.Sij, G.Sij)
+    Rij = vcat.(F.Rij, G.Rij)
+    return naiveSubLatticeFT(Sij, Rij)
+end
 
 @inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat)
     (; Sij, Rij) = F

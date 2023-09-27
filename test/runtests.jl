@@ -185,7 +185,15 @@ end
 
     testLatticeFFT(ChiNaiveFast,chiNaive)
 
+    @testset "real and imag" begin
+        ChiRe = real(ChiNaiveFast)
+        ChiIm = imag(ChiNaiveFast)
+        @test ChiNaiveFast(1.,2) ≈ ChiRe(1.,2) 
+        @test real(ChiNaiveFast[1,2](1.,2)) ≈ ChiRe[1,2](1.,2)
+        @test imag(ChiNaiveFast[1,2](1.,2)) ≈ ChiIm[1,2](1.,2)
+    end
 end
+ 
 ##
 @testset "Non-Bravais FFT" verbose = true begin
     (;a,b) = testLattice

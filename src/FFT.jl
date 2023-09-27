@@ -102,9 +102,9 @@ function (A::AbstractLatticeFT)(k::AbstractVector)
     for i in axes(A, 1)
         for j in axes(A, 2)
             if i == j
-                res += real(A[i, j](k))
+                res += real(A[i, j])(k)
             elseif i < j
-                res += 2real(A[i, j](k))
+                res += 2real(A[i, j])(k)
             end
         end
     end

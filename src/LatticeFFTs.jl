@@ -21,6 +21,7 @@ include("FFT.jl")
 
 include("NaiveFT.jl")
 export naiveLatticeFT
+include("NaiveFTOptimizations.jl")
 
 using PrecompileTools
 include("precompile.jl")
