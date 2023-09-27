@@ -81,7 +81,6 @@ struct LatticeFT{Mat<:AbstractMatrix{<:AbstractSubLatticeFT}} <: AbstractLattice
     end
 end
 
-
 Base.size(S::LatticeFT) = size(S.S)
 Base.getindex(S::LatticeFT, I::Vararg{Int, N}) where N	= getindex(S.S, I...)
 Base.setindex!(S::LatticeFT, x, I::Vararg{Int, N}) where N = setindex!(S.S, x, I...)
@@ -97,7 +96,7 @@ evaluate the full Fourier transform averaging over all sublattices. Semantically
     end
     ```
 """
-function (A::LatticeFT)(k::AbstractVector)
+function (A::AbstractLatticeFT)(k::AbstractVector)
     dim = size(A)#
     res = 0
     for i in axes(A, 1)
@@ -112,7 +111,7 @@ function (A::LatticeFT)(k::AbstractVector)
     return res / dim[1]
 end
 
-function (A::LatticeFT)(x::Vararg{Number,NArgs}) where {NArgs}
+function (A::AbstractLatticeFT)(x::Vararg{Number,NArgs}) where {NArgs}
     k = SVector(x)
     return A(k)
 end
