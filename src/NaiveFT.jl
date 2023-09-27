@@ -4,9 +4,9 @@ struct naiveSubLatticeFT{N,Vec<:AbstractVector{<:Number},Mat<:NTuple{N,AbstractV
 end
 
 @inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat)
-    Chi_k_re = 0
-    Chi_k_im = 0
     (; Sij, Rij) = F
+    Chi_k_im = zero(eltype(Sij))
+    Chi_k_re = zero(eltype(Sij))
     Rx, Ry = Rij
 
     @turbo for i in eachindex(Sij, Rx, Ry)
@@ -24,9 +24,9 @@ end
 end
 
 @inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat, kz::AbstractFloat)
-    Chi_k_re = 0
-    Chi_k_im = 0
     (; Sij, Rij) = F
+    Chi_k_im = zero(eltype(Sij))
+    Chi_k_re = zero(eltype(Sij))
     Rx, Ry, Rz = Rij
 
     @turbo for i in eachindex(Sij, Rx, Ry)
@@ -90,9 +90,17 @@ function splitRijAndSij(
 
 end
 
-function splitRij(Rij::Vector{SVector{Dim,T}}) where {T<:Real,Dim}
-    return Tuple(getindex.(Rij, i) for i in 1:Dim)
+function splitRij(Rij::Vector{SVector{2,T}})::NTuple{2,Vector{T}} where {T<:Real}
+    return (getindex.(Rij, 1), getindex.(Rij, 2))
 end
+
+function splitRij(Rij::Vector{SVector{3,T}})::NTuple{3,Vector{T}} where {T<:Real}
+    return (getindex.(Rij, 1), getindex.(Rij, 2), getindex.(Rij, 3))
+end
+
+# function splitRij(Rij::Vector{SVector{Dim,T}}) where {T<:Real,Dim}
+#     return Tuple(getindex.(Rij, i) for i in 1:Dim)
+# end
 
 function naiveLatticeFT(
     S_ab::AbstractMatrix{<:AbstractArray},
@@ -100,6 +108,6 @@ function naiveLatticeFT(
     UnitCellVectors::AbstractArray{<:AbstractArray}
 )
     (; Rij_vec, Sij_vec) = splitRijAndSij(S_ab, BasisVectors, UnitCellVectors)
-    Rij_vec = splitRij.(Rij_vec)
-    return LatticeFT(naiveSubLatticeFT.(Sij_vec, Rij_vec))
+    Rij_vec2 = splitRij.(Rij_vec)
+    return LatticeFT(naiveSubLatticeFT.(Sij_vec, Rij_vec2))
 end
