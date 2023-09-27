@@ -21,6 +21,8 @@ end
 
 Base.:*(m::Number,G::naiveSubLatticeFT) = G*m
 
+@inline (F::AbstractSubLatticeFT)(k::SVector) = F(k...)
+
 @inline function (F::naiveSubLatticeFT)(kx::AbstractFloat, ky::AbstractFloat)
     (; Sij, Rij) = F
     Chi_k_im = zero(eltype(Sij))

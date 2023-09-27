@@ -6,6 +6,9 @@ struct ImagPart{FType<:AbstractSubLatticeFT} <: AbstractSubLatticeFT
     FT::FType
 end
 
+@inline (A::RealPart)(k::Vararg{Number,N}) where {N} = real(A.FT(k...))
+@inline (A::ImagPart)(k::Vararg{Number,N}) where {N} = imag(A.FT(k...))
+
 Base.imag(x::AbstractSubLatticeFT) = ImagPart(x)
 Base.real(x::AbstractSubLatticeFT) = RealPart(x)
 
@@ -16,6 +19,7 @@ Base.real(F::ImagPart{T}) where T = zero(T)
 Base.imag(F::RealPart{T}) where T = zero(T)
 
 Base.real(x::AbstractLatticeFT) = LatticeFT(real.(x.S))
+Base.imag(x::AbstractLatticeFT) = LatticeFT(imag.(x.S))
 
 
 Base.:+(F::T, G::T) where {T<:RealPart} = RealPart(F.FT + G.FT)
@@ -25,8 +29,9 @@ Base.:/(G::RealPart,m::Number) = RealPart(G.FT/m)
 
 for (Reim,conversion,f) in zip((ImagPart,RealPart), (imag, real),(sin,cos))
     eval(:(
-        @inline function (F::$Reim{<:naiveSubLatticeFT})(kx::AbstractFloat, ky::AbstractFloat)
+        @inline function (F::$Reim{<:naiveSubLatticeFT})(k::Vararg{AbstractFloat,2})
             (; Sij, Rij) = F.FT
+            kx,ky = k
             Chi_k = zero(eltype(Sij))
             Rx, Ry = Rij
 
@@ -45,7 +50,8 @@ for (Reim,conversion,f) in zip((ImagPart,RealPart), (imag, real),(sin,cos))
     ))
 
     eval(:(
-        @inline function (F::$Reim{<:naiveSubLatticeFT})(kx::AbstractFloat, ky::AbstractFloat, kz::AbstractFloat)
+        @inline function (F::$Reim{<:naiveSubLatticeFT})(k::Vararg{AbstractFloat,3})
+            kx,ky,kz = k
             (; Sij, Rij) = F.FT
             Chi_k = zero(eltype(Sij))
             Rx, Ry, Rz = Rij
@@ -64,15 +70,5 @@ for (Reim,conversion,f) in zip((ImagPart,RealPart), (imag, real),(sin,cos))
             return Chi_k
         end
         
-    ))
-    eval(:(
-    @inline function (A::$Reim)(k::SVector)
-        return A(k...)
-    end
-    ))
-    eval(:(
-    @inline function (A::$Reim)(k::Vararg{Number,N}) where {N}
-        return $conversion(A.FT(k...))
-    end
     ))
 end
