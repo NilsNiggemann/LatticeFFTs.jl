@@ -184,7 +184,13 @@ end
     chiNaive = [k-> ComplexFourier(testLattice.Rij_vec[a,b],testLattice.Sij_vec[a,b],k) for a in 1:2, b in 1:2]
 
     testLatticeFFT(ChiNaiveFast,chiNaive)
+end
 
+@testset "math ops" begin
+    (;a,b) = testLattice
+
+    ChiNaiveFast = LatticeFFTs.naiveLatticeFT(testLattice.Sij_ab,a,b)
+    
     @testset "real and imag" begin
         ChiRe = real(ChiNaiveFast)
         ChiIm = imag(ChiNaiveFast)
@@ -192,8 +198,17 @@ end
         @test real(ChiNaiveFast[1,2](1.,2)) ≈ ChiRe[1,2](1.,2)
         @test imag(ChiNaiveFast[1,2](1.,2)) ≈ ChiIm[1,2](1.,2)
     end
+    @testset "addition and multiplication" begin
+        chidiag = real(sum(ChiNaiveFast[i,i] for i in axes(ChiNaiveFast,1)))
+        @test length(chidiag.FT.Sij) == length(b)* length(ChiNaiveFast[1,1].Sij)
+
+        chioffdiag = real(sum(ChiNaiveFast[i,j] for i in axes(ChiNaiveFast,1), j in axes(ChiNaiveFast,2) if j<i))
+
+        chiTot = (chidiag + 2*chioffdiag) /length(b)
+        @test chiTot(1.,2) ≈ ChiNaiveFast(1.,2) atol = 1e-14
+
+    end
 end
- 
 ##
 @testset "Non-Bravais FFT" verbose = true begin
     (;a,b) = testLattice

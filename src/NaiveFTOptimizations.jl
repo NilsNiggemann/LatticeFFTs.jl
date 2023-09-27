@@ -18,6 +18,11 @@ Base.imag(F::RealPart{T}) where T = zero(T)
 Base.real(x::AbstractLatticeFT) = LatticeFT(real.(x.S))
 
 
+Base.:+(F::T, G::T) where {T<:RealPart} = RealPart(F.FT + G.FT)
+Base.:*(G::RealPart,m::Number) = RealPart(G.FT*m)
+Base.:*(m::Number,G::RealPart) = G*m
+Base.:/(G::RealPart,m::Number) = RealPart(G.FT/m)
+
 for (Reim,conversion,f) in zip((ImagPart,RealPart), (imag, real),(sin,cos))
     eval(:(
         @inline function (F::$Reim{<:naiveSubLatticeFT})(kx::AbstractFloat, ky::AbstractFloat)
