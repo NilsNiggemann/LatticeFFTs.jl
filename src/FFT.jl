@@ -64,6 +64,10 @@ struct PhaseShiftedFFT{InterpolationType,BasisMat<:AbstractMatrix,PhaseVecType<:
     PhaseVector::PhaseVecType
 end
 
+@inline function (F::PhaseShiftedFFT)(k::SVector{N}) where {N}
+    exp(1im * k' * F.PhaseVector) * F.S((F.T' * k)...)
+end
+
 @inline function (F::PhaseShiftedFFT)(k::AbstractVector)
     exp(1im * k' * F.PhaseVector) * F.S((F.T' * k)...)
 end
