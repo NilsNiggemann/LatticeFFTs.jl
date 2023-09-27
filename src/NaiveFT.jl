@@ -44,9 +44,51 @@ end
     return Chi_k_re + 1im * Chi_k_im
 end
 
-@inline function (F::naiveSubLatticeFT)(k::Vararg{Number,NArgs}) where {NArgs}
-    Chi_k = 0
+
+@inline function (F::naiveSubLatticeFT)(kx::Real, ky::Real, kz::Real)
     (; Sij, Rij) = F
+    Chi_k_im = zero(eltype(Sij))
+    Chi_k_re = zero(eltype(Sij))
+    Rx, Ry, Rz = Rij
+
+    for i in eachindex(Sij, Rx, Ry)
+        rx = Rx[i]
+        ry = Ry[i]
+        rz = Rz[i]
+
+        res_im, res_re = sincos(kx * rx + ky * ry + kz * rz)
+
+        Chi_k_im += res_im * Sij[i]
+        Chi_k_re += res_re * Sij[i]
+
+    end
+
+    return Chi_k_re + 1im * Chi_k_im
+end
+
+@inline function (F::naiveSubLatticeFT)(kx::Real, ky::Real)
+    (; Sij, Rij) = F
+    Chi_k_im = zero(eltype(Sij))
+    Chi_k_re = zero(eltype(Sij))
+    Rx, Ry = Rij
+
+    for i in eachindex(Sij, Rx, Ry)
+        rx = Rx[i]
+        ry = Ry[i]
+
+        res_im, res_re = sincos(kx * rx + ky * ry)
+
+        Chi_k_im += res_im * Sij[i]
+        Chi_k_re += res_re * Sij[i]
+
+    end
+
+    return Chi_k_re + 1im * Chi_k_im
+end
+
+@inline function (F::naiveSubLatticeFT)(k::Vararg{Number,NArgs}) where {NArgs}
+    (; Sij, Rij) = F
+    Chi_k = zero(Complex{eltype(Sij)})
 
     @inbounds for i in eachindex(Sij)
         arg = sum(k[j] * Rij[j][i] for j in 1:NArgs)
