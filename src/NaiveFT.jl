@@ -64,8 +64,8 @@ end
 function splitRijAndSij(
     S_ab::AbstractMatrix{<:AbstractArray},
     BasisVectors::AbstractMatrix,
-    UnitCellVectors::AbstractArray{<:AbstractArray}
-)
+    UnitCellVectors::AbstractArray{SVector{Dim, T}}
+) where {Dim,T}
 
     NCell, NCell2 = size(S_ab)
     @assert NCell == NCell2 "S_ab needs to be a square matrix"
@@ -74,11 +74,11 @@ function splitRijAndSij(
     a = BasisVectors
     UC = UnitCellVectors
 
-    function Rij(α, β)
+    function Rij(α, β)::Vector{SVector{Dim, T}}
         dim = size(S_ab[α, β])
         L = dim[1] ÷ 2
         range = L:-1:-L
-        latticeInds = Iterators.product((range for _ in 1:length(dim))...)
+        latticeInds = Iterators.product((range for _ in 1:Dim)...)
         rij = [a * SVector(Tuple(n)) + (UC[α] - UC[β]) for n in latticeInds]
         return reshape(rij, length(rij))
 
